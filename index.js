@@ -28,8 +28,22 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const usersCollection = client.db("golingoDb").collection("users");
+    const classesCollection = client.db("golingoDb").collection("classes");
     
-    
+    // class apis
+    app.get('/class',async(req,res)=>{
+      const result = await classesCollection.find().toArray();
+      res.send(result);
+    })
+    // app.get('/addClass',async(req,res)=>{
+    //   const result = await classesCollection.find().toArray();
+    //   res.send(result);
+    // })
+    app.post('/addClass',async(req,res)=>{
+      const newClass = req.body;
+      const result = await classesCollection.insertOne(newClass);
+      res.send(result);
+    })
     //user apis
     // app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
     //     const result = await usersCollection.find().toArray();
@@ -53,7 +67,7 @@ async function run() {
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
-    await client.close();
+    // await client.close();
   }
 }
 run().catch(console.dir);
