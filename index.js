@@ -48,6 +48,15 @@ async function run() {
     })
 
     //selected collection
+    app.get('/selected',async(req,res)=>{
+      const email = req.query.email;
+      if(!email){
+        res.send([]);
+      }
+      const query = {email : email};
+      const result = await selectedCollection.find(query).toArray();
+      res.send(result);
+    });
     app.post('/selected',async(req,res)=>{
       const item = req.body;
       console.log(item);
