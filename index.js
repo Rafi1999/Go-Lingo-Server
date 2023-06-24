@@ -29,6 +29,8 @@ async function run() {
     await client.connect();
     const usersCollection = client.db("golingoDb").collection("users");
     const classesCollection = client.db("golingoDb").collection("classes");
+
+    const selectedCollection = client.db("golingoDb").collection("selected");
     
     // class apis
     app.get('/class',async(req,res)=>{
@@ -42,6 +44,14 @@ async function run() {
     app.post('/addClass',async(req,res)=>{
       const newClass = req.body;
       const result = await classesCollection.insertOne(newClass);
+      res.send(result);
+    })
+
+    //selected collection
+    app.post('/selected',async(req,res)=>{
+      const item = req.body;
+      console.log(item);
+      const result = await selectedCollection.insertOne(item);
       res.send(result);
     })
     //user apis
