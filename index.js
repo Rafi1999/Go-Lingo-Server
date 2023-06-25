@@ -31,9 +31,9 @@ async function run() {
     const classesCollection = client.db("golingoDb").collection("classes");
 
     const selectedCollection = client.db("golingoDb").collection("selected");
-    
+
     // class apis
-    app.get('/class',async(req,res)=>{
+    app.get('/class', async (req, res) => {
       const result = await classesCollection.find().toArray();
       res.send(result);
     })
@@ -41,26 +41,32 @@ async function run() {
     //   const result = await classesCollection.find().toArray();
     //   res.send(result);
     // })
-    app.post('/addClass',async(req,res)=>{
+    app.post('/addClass', async (req, res) => {
       const newClass = req.body;
       const result = await classesCollection.insertOne(newClass);
       res.send(result);
     })
 
     //selected collection
-    app.get('/selected',async(req,res)=>{
+    app.get('/selected', async (req, res) => {
       const email = req.query.email;
-      if(!email){
+      if (!email) {
         res.send([]);
       }
-      const query = {email : email};
+      const query = { email: email };
       const result = await selectedCollection.find(query).toArray();
       res.send(result);
     });
-    app.post('/selected',async(req,res)=>{
+    app.post('/selected', async (req, res) => {
       const item = req.body;
       console.log(item);
       const result = await selectedCollection.insertOne(item);
+      res.send(result);
+    })
+    app.delete('/selected/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await selectedCollection.deleteOne(query);
       res.send(result);
     })
     //user apis
@@ -68,19 +74,19 @@ async function run() {
     //     const result = await usersCollection.find().toArray();
     //     res.send(result);
     //   });
-  
-      // app.post('/users', async (req, res) => {
-      //   const user = req.body;
-      //   const query = { email: user.email }
-      //   const existingUser = await usersCollection.findOne(query);
-  
-      //   if (existingUser) {
-      //     return res.send({ message: 'user already exists' })
-      //   }
-  
-      //   const result = await usersCollection.insertOne(user);
-      //   res.send(result);
-      // });
+
+    // app.post('/users', async (req, res) => {
+    //   const user = req.body;
+    //   const query = { email: user.email }
+    //   const existingUser = await usersCollection.findOne(query);
+
+    //   if (existingUser) {
+    //     return res.send({ message: 'user already exists' })
+    //   }
+
+    //   const result = await usersCollection.insertOne(user);
+    //   res.send(result);
+    // });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -92,10 +98,10 @@ async function run() {
 run().catch(console.dir);
 
 
-app.get('/',(req,res)=>{
-    res.send("Go-Lingo server is running")
+app.get('/', (req, res) => {
+  res.send("Go-Lingo server is running")
 })
 
-app.listen(port,()=>{
-    console.log(`Go-Lingo is running on port ${port}`);
+app.listen(port, () => {
+  console.log(`Go-Lingo is running on port ${port}`);
 })
