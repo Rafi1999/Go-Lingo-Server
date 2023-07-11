@@ -65,7 +65,12 @@ async function run() {
       next();
     }
     // class apis
-    app.get('/class', async (req, res) => {
+    app.get('/class/all', async (req, res) => {
+      const query = {status : 'approved'}
+      const result = await classesCollection.find(query).toArray();
+      res.send(result);
+    })
+    app.get('/class',verifyJWT, async (req, res) => {
       const result = await classesCollection.find().toArray();
       res.send(result);
     })
@@ -73,7 +78,7 @@ async function run() {
     //   const result = await classesCollection.find().toArray();
     //   res.send(result);
     // })
-    app.post('/addClass', async (req, res) => {
+    app.post('/class', async (req, res) => {
       const newClass = req.body;
       const result = await classesCollection.insertOne(newClass);
       res.send(result);
