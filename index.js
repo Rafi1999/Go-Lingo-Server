@@ -65,11 +65,12 @@ async function run() {
       next();
     }
     // class apis
+    
     app.get('/class/all', async (req, res) => {
-      const query = { status: 'approved' }
-      const result = await classesCollection.find(query).toArray();
-      res.send(result);
-    })
+  const query = { status: 'approved' };
+  const result = await classesCollection.find(query).toArray();
+  res.send(result);
+});
     app.get('/class', verifyJWT,verifyAdmin, async (req, res) => {
       const result = await classesCollection.find().toArray();
       res.send(result);
@@ -87,6 +88,34 @@ async function run() {
       const result = await classesCollection.find(query).toArray();
       res.send(result);
     })
+    app.get('/class/ins/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await classesCollection.find(query).toArray();
+      res.send(result);
+    })
+    app.patch("/class/ins/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+
+      const userInput = req.body;
+      const updateDoc = {
+          $set: {
+              name: userInput.name,
+              instructorName: userInput.instructorName,
+              instructorEmail: userInput.instructorEmail,
+              availableSeats: userInput.availableSeats,
+              price: userInput.price,
+              picture: userInput.picture,
+              status: userInput.status,
+              feedback: userInput.feedback
+          },
+      };
+      const result = await classesCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    })
+
+    //admin approve
     app.patch('/class/approve/:id', async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -186,14 +215,14 @@ async function run() {
     2. email check
     3. check admin
     */
-    app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+    app.get('/users/admin/:email', async (req, res) => {
       const email = req.params.email;
-      if (req.decoded.email !== email) {
-        res.send({ admin: false })
-      }
+      // if (req.decoded.email !== email) {
+      //   res.send({ admin: false })
+      // }
       const query = { email: email }
       const user = await usersCollection.findOne(query);
-      const result = { admin: user?.role === 'admin' }
+      const result = { admin: (user?.role === 'admin') }
       res.send(result);
     })
     // make admin
@@ -210,11 +239,11 @@ async function run() {
     })
 
     // instructor
-    app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+    app.get('/users/instructor/:email', async (req, res) => {
       const email = req.params.email;
-      if (req.decoded.email !== email) {
-        res.send({ instructor: false })
-      }
+      // if (req.decoded.email !== email) {
+      //   res.send({ instructor: false })
+      // }
       const query = { email: email }
       const user = await usersCollection.findOne(query);
       const result = { instructor: user?.role === 'instructor' }
