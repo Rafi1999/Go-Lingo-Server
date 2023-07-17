@@ -4,7 +4,7 @@ const cors = require('cors');
 const { ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
-//const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -46,6 +46,7 @@ async function run() {
     const classesCollection = client.db("golingoDb").collection("classes");
 
     const selectedCollection = client.db("golingoDb").collection("selected");
+    const paymentCollection = client.db("golingoDb").collection("payments");
 
     //jwt
     app.post('/jwt', (req, res) => {
@@ -65,13 +66,13 @@ async function run() {
       next();
     }
     // class apis
-    
+
     app.get('/class/all', async (req, res) => {
-  const query = { status: 'approved' };
-  const result = await classesCollection.find(query).toArray();
-  res.send(result);
-});
-    app.get('/class', verifyJWT,verifyAdmin, async (req, res) => {
+      const query = { status: 'approved' };
+      const result = await classesCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get('/class', verifyJWT, verifyAdmin, async (req, res) => {
       const result = await classesCollection.find().toArray();
       res.send(result);
     })
@@ -100,16 +101,16 @@ async function run() {
 
       const userInput = req.body;
       const updateDoc = {
-          $set: {
-              name: userInput.name,
-              instructorName: userInput.instructorName,
-              instructorEmail: userInput.instructorEmail,
-              availableSeats: userInput.availableSeats,
-              price: userInput.price,
-              picture: userInput.picture,
-              status: userInput.status,
-              feedback: userInput.feedback
-          },
+        $set: {
+          name: userInput.name,
+          instructorName: userInput.instructorName,
+          instructorEmail: userInput.instructorEmail,
+          availableSeats: userInput.availableSeats,
+          price: userInput.price,
+          picture: userInput.picture,
+          status: userInput.status,
+          feedback: userInput.feedback
+        },
       };
       const result = await classesCollection.updateOne(filter, updateDoc);
       res.send(result);
@@ -122,7 +123,7 @@ async function run() {
       const updated = {
         $set: {
           status: 'approved',
-          feedback : 'approved'
+          feedback: 'approved'
         },
       };
       const result = await classesCollection.updateOne(filter, updated);
@@ -171,9 +172,14 @@ async function run() {
       const result = await selectedCollection.find(query).toArray();
       res.send(result);
     });
+    app.get('/picked/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await selectedCollection.find(query).toArray();
+      res.send(result);
+    })
     app.post('/selected', async (req, res) => {
       const item = req.body;
-      console.log(item);
       const result = await selectedCollection.insertOne(item);
       res.send(result);
     })
@@ -183,6 +189,52 @@ async function run() {
       const result = await selectedCollection.deleteOne(query);
       res.send(result);
     })
+
+    //create payment
+    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+      const { price } = req.body;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+      res.send({ clientSecret: paymentIntent.client_secret })
+    })
+    //payment apis
+    app.post('/payments', verifyJWT, async (req, res) => {
+      const payment = req.body;
+      try {
+        const insertResult = await paymentCollection.insertOne(payment);
+        const filter = { _id: new ObjectId(payment.selectedId) };
+        const updated = {
+          $set: {
+            availableSeats: payment.availableSeats-1
+          },
+        };
+        const updatedResult = await classesCollection.updateOne(filter, updated);
+        const query = { _id: new ObjectId(payment.chosenId) };
+        const deleteResult = await selectedCollection.deleteOne(query);
+        res.send({ insertResult, deleteResult,updatedResult });
+      } catch (error) {
+        console.error('Error occurred:', error);
+        res.status(500).send('An error occurred while processing your request.');
+      }
+    });
+    app.get('/payments', verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
+        res.send([]);
+      }
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({ error: true, message: 'forbidden access' })
+      }
+      const query = { email: email };
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result);
+    });
+
     /*
 
     */
